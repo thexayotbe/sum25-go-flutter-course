@@ -12,23 +12,31 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
-  // TODO: Add loading/error state if needed
+  final List<String> _messages = [];
 
   @override
   void initState() {
     super.initState();
-    // TODO: Connect to chat service
+    widget.chatService.connect();
+    widget.chatService.messageStream.listen((msg) {
+      setState(() {
+        _messages.add(msg);
+      });
+    });
   }
 
   @override
   void dispose() {
     _controller.dispose();
-    // TODO: Dispose chat service if needed
+    widget.chatService.dispose();
     super.dispose();
   }
 
   void _sendMessage() {
-    // TODO: Send message using chatService
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+    widget.chatService.sendMessage(text);
+    _controller.clear();
   }
 
   @override
@@ -38,15 +46,10 @@ class _ChatScreenState extends State<ChatScreen> {
       body: Column(
         children: [
           Expanded(
-            child: StreamBuilder<String>(
-              stream: widget.chatService.messageStream,
-              builder: (context, snapshot) {
-                // TODO: Display messages, loading, and error states
-                return ListView(
-                  children: [
-                    // TODO: Build message widgets from snapshot.data
-                  ],
-                );
+            child: ListView.builder(
+              itemCount: _messages.length,
+              itemBuilder: (context, index) {
+                return ListTile(title: Text(_messages[index]));
               },
             ),
           ),
@@ -57,8 +60,8 @@ class _ChatScreenState extends State<ChatScreen> {
                 Expanded(
                   child: TextField(
                     controller: _controller,
-                    decoration:
-                        const InputDecoration(hintText: 'Type a message'),
+                    decoration: const InputDecoration(hintText: 'Type a message'),
+                    onSubmitted: (_) => _sendMessage(),
                   ),
                 ),
                 IconButton(

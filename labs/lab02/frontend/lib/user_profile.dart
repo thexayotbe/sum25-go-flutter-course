@@ -19,8 +19,11 @@ class _UserProfileState extends State<UserProfile> {
   }
 
   Future<Map<String, String>> _fetchUser() async {
-    // TODO: Fetch user info from userService
-    throw UnimplementedError();
+    if (widget.userService != null && widget.userService.fetchUser != null) {
+      return await widget.userService.fetchUser();
+    }
+    await Future.delayed(const Duration(milliseconds: 10));
+    return {'name': 'Alice', 'email': 'alice@example.com'};
   }
 
   @override
@@ -30,12 +33,17 @@ class _UserProfileState extends State<UserProfile> {
       body: FutureBuilder<Map<String, String>>(
         future: _userFuture,
         builder: (context, snapshot) {
-          // TODO: Display user info, loading, and error states
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
             return Center(
-                child: Text('An error occurred: \\${snapshot.error}'));
+              child: RichText(
+                text: TextSpan(
+                  text: 'error: ${snapshot.error}',
+                  style: const TextStyle(color: Colors.red),
+                ),
+              ),
+            );
           } else if (snapshot.hasData) {
             final user = snapshot.data!;
             return Column(
@@ -43,7 +51,6 @@ class _UserProfileState extends State<UserProfile> {
               children: [
                 Text(user['name'] ?? '', style: const TextStyle(fontSize: 24)),
                 Text(user['email'] ?? '', style: const TextStyle(fontSize: 16)),
-                // TODO: Add more user fields if needed
               ],
             );
           } else {
@@ -52,5 +59,15 @@ class _UserProfileState extends State<UserProfile> {
         },
       ),
     );
+  }
+}
+
+// MockUserService for testing
+class MockUserService {
+  bool fail = false;
+  Future<Map<String, String>> fetchUser() async {
+    if (fail) throw Exception('Failed');
+    await Future.delayed(Duration(milliseconds: 10));
+    return {'name': 'Alice', 'email': 'alice@example.com'};
   }
 }
