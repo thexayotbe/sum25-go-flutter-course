@@ -19,9 +19,35 @@ class MyApp extends StatelessWidget {
       title: 'Lab 02 Chat',
       initialRoute: '/',
       routes: {
-        '/': (context) => ChatScreen(chatService: chatService),
+        '/': (context) => CounterScreen(),
+        '/chat': (context) => ChatScreen(chatService: chatService),
         '/profile': (context) => UserProfile(userService: userService),
       },
+    );
+  }
+}
+
+class CounterScreen extends StatefulWidget {
+  @override
+  State<CounterScreen> createState() => _CounterScreenState();
+}
+
+class _CounterScreenState extends State<CounterScreen> {
+  int _counter = 0;
+  void _incrementCounter() {
+    setState(() {
+      _counter++;
+    });
+  }
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Counter')),
+      body: Center(child: Text('$_counter', style: const TextStyle(fontSize: 48))),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _incrementCounter,
+        child: const Icon(Icons.add),
+      ),
     );
   }
 }
