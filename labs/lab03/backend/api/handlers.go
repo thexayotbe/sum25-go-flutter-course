@@ -27,18 +27,19 @@ func NewHandler(storage *storage.MemoryStorage) *Handler {
 func (h *Handler) SetupRoutes() *mux.Router {
 	router := mux.NewRouter()
 	router.Use(corsMiddleware)
-	v1 := router.PathPrefix("/api/v1").Subrouter()
 
+	// Глобальный обработчик OPTIONS
+	router.Methods(http.MethodOptions).HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	v1 := router.PathPrefix("/api").Subrouter()
 	v1.HandleFunc("/messages", h.GetMessages).Methods("GET")
 	v1.HandleFunc("/messages", h.CreateMessage).Methods("POST")
-	v1.HandleFunc("/messages", h.handleOptions).Methods("OPTIONS")
 	v1.HandleFunc("/messages/{id}", h.UpdateMessage).Methods("PUT")
 	v1.HandleFunc("/messages/{id}", h.DeleteMessage).Methods("DELETE")
-	v1.HandleFunc("/messages/{id}", h.handleOptions).Methods("OPTIONS")
 	v1.HandleFunc("/status/{code}", h.GetHTTPStatus).Methods("GET")
-	v1.HandleFunc("/status/{code}", h.handleOptions).Methods("OPTIONS")
 	v1.HandleFunc("/health", h.HealthCheck).Methods("GET")
-	v1.HandleFunc("/health", h.handleOptions).Methods("OPTIONS")
 
 	return router
 }
@@ -136,7 +137,7 @@ func (h *Handler) GetHTTPStatus(w http.ResponseWriter, r *http.Request) {
 
 	response := models.HTTPStatusResponse{
 		StatusCode:  code,
-		ImageURL:    "https://http.cat/" + codeStr,
+		ImageURL:    "", // Not used anymore, we use local icons
 		Description: getHTTPStatusDescription(code),
 	}
 
@@ -153,11 +154,6 @@ func (h *Handler) HealthCheck(w http.ResponseWriter, r *http.Request) {
 	}
 
 	h.writeJSON(w, http.StatusOK, response)
-}
-
-// handleOptions handles OPTIONS requests for CORS preflight
-func (h *Handler) handleOptions(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusOK)
 }
 
 // Helper function to write JSON responses
