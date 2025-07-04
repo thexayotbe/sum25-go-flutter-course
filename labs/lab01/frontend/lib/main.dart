@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:frontend/counter_app.dart';
+import 'package:frontend/profile_card.dart';
 import 'package:frontend/registration_form.dart';
 
 void main() {

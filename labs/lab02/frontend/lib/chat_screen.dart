@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'chat_service.dart';
+import 'dart:async';
 
 // ChatScreen displays the chat UI
 class ChatScreen extends StatefulWidget {

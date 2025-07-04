@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
 class CounterApp extends StatefulWidget {
-  const CounterApp({super.key});
+  const CounterApp({Key? key}) : super(key: key);
 
   @override
   State<CounterApp> createState() => _CounterAppState();
 }
 
 class _CounterAppState extends State<CounterApp> {
-  final int _counter = 0;
+  int _counter = 0;
 
   void _incrementCounter() {
     // TODO: Implement this function
@@ -27,7 +27,7 @@ class _CounterAppState extends State<CounterApp> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Counter App'),
-        actions: const [
+        actions: [
           // TODO: add a refresh button with Icon(Icons.refresh)
         ],
       ),
@@ -40,12 +40,12 @@ class _CounterAppState extends State<CounterApp> {
               style: const TextStyle(fontSize: 48),
             ),
             const SizedBox(height: 32),
-            const Row(
+            Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 // TODO: add a decrement button with Icon(Icons.remove) and onPressed: _decrementCounter
                 
-                SizedBox(width: 32),
+                const SizedBox(width: 32),
                 // TODO: add a increment button with Icon(Icons.add) and onPressed: _incrementCounter
                 
               ],

@@ -5,7 +5,7 @@ import 'package:lab02_chat/user_service.dart';
 class UserProfile extends StatefulWidget {
   final UserService
       userService; // Accepts a user service for fetching user info
-  const UserProfile({super.key, required this.userService});
+  const UserProfile({Key? key, required this.userService}) : super(key: key);
 
   @override
   State<UserProfile> createState() => _UserProfileState();

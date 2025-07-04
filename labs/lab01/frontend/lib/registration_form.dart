@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class RegistrationForm extends StatefulWidget {
-  const RegistrationForm({super.key});
+  const RegistrationForm({Key? key}) : super(key: key);
 
   @override
   State<RegistrationForm> createState() => _RegistrationFormState();
