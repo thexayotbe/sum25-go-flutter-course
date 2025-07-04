@@ -40,8 +40,10 @@ class _ChatScreenState extends State<ChatScreen> {
     });
     try {
       _messages = await _apiService.getMessages();
+      print('Loaded ${_messages.length} messages'); // Debug
     } catch (e){
       _error = e.toString();
+      print('Error loading messages: $e'); // Debug
     } finally {
       setState(() {
         _isLoading = false;
@@ -65,26 +67,41 @@ class _ChatScreenState extends State<ChatScreen> {
       setState(() {
         _messages.add(message);
         _messageController.clear();
+        _error = null; // Clear any previous errors
       });
+      print('Message sent successfully: ${message.content}'); // Debug
     } catch (e) {
       setState(() {
         _error = e.toString();
       });
+      print('Error sending message: $e'); // Debug
     }
    }
 
   Future<void> _editMessage(Message message) async {
+    final TextEditingController editController = TextEditingController(text: message.content);
     final content = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Edit Message'),
         content: TextField(
-          controller: TextEditingController(text: message.content),
+          controller: editController,
           decoration: const InputDecoration(labelText: 'New Content'),
+          autofocus: true,
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(editController.text),
+            child: const Text('Save'),
+          ),
+        ],
       ),
     );
-    if(content == null) return;
+    if(content == null || content.isEmpty) return;
     final request = UpdateMessageRequest(content: content);
     try {
       final updatedMessage = await _apiService.updateMessage(message.id, request);
@@ -143,11 +160,50 @@ class _ChatScreenState extends State<ChatScreen> {
             children: [
               Text(status.description),
               const SizedBox(height: 10),
-              Image.network(
-                status.imageUrl,
+              Container(
                 height: 200,
-                errorBuilder: (context, error, stackTrace) => 
-                  const Text('Failed to load image'),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: _getStatusColor(statusCode),
+                  borderRadius: BorderRadius.circular(8),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 4,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        _getStatusIcon(statusCode),
+                        size: 64,
+                        color: Colors.white,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'HTTP $statusCode',
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        status.description,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
@@ -166,60 +222,166 @@ class _ChatScreenState extends State<ChatScreen> {
     }
   }
 
+  Color _getStatusColor(int statusCode) {
+    if (statusCode >= 200 && statusCode < 300) {
+      return Colors.green;
+    } else if (statusCode >= 400 && statusCode < 500) {
+      return Colors.orange;
+    } else if (statusCode >= 500) {
+      return Colors.red;
+    } else {
+      return Colors.blue;
+    }
+  }
+
+  IconData _getStatusIcon(int statusCode) {
+    if (statusCode >= 200 && statusCode < 300) {
+      return Icons.check_circle;
+    } else if (statusCode >= 400 && statusCode < 500) {
+      return Icons.warning;
+    } else if (statusCode >= 500) {
+      return Icons.error;
+    } else {
+      return Icons.info;
+    }
+  }
+
   Widget _buildMessageTile(Message message) {
-    return ListTile(
-      leading: CircleAvatar(
-        child: Text(message.username[0].toUpperCase()),
-      ),
-      title: Text('${message.username} - ${message.timestamp.toString()}'),
-      subtitle: Text(message.content),
-      trailing: PopupMenuButton(
-        itemBuilder: (context) => [
-          const PopupMenuItem(
-            value: 'edit',
-            child: Text('Edit'),
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: Colors.blue,
+          child: Text(
+            message.username[0].toUpperCase(),
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
-          const PopupMenuItem(
-            value: 'delete',
-            child: Text('Delete'),
-          ),
-        ],
-        onSelected: (value) {
-          if (value == 'edit') {
-            _editMessage(message);
-          } else if (value == 'delete') {
-            _deleteMessage(message);
-          }
-        },
+        ),
+        title: Row(
+          children: [
+            Text(
+              message.username,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              _formatTimestamp(message.timestamp),
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(message.content),
+        ),
+        trailing: PopupMenuButton(
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'edit',
+              child: Text('Edit'),
+            ),
+            const PopupMenuItem(
+              value: 'delete',
+              child: Text('Delete'),
+            ),
+          ],
+          onSelected: (value) {
+            if (value == 'edit') {
+              _editMessage(message);
+            } else if (value == 'delete') {
+              _deleteMessage(message);
+            }
+          },
+        ),
+        onTap: () => _showHTTPStatus(200),
       ),
-      onTap: () => _showHTTPStatus(200),
     );
+  }
+
+  String _formatTimestamp(DateTime timestamp) {
+    final now = DateTime.now();
+    final difference = now.difference(timestamp);
+    
+    if (difference.inDays > 0) {
+      return '${difference.inDays}d ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes}m ago';
+    } else {
+      return 'just now';
+    }
   }
 
   Widget _buildMessageInput() {
     return Container(
       padding: const EdgeInsets.all(16),
-      color: Colors.grey[200],
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        border: Border(
+          top: BorderSide(color: Colors.grey[300]!),
+        ),
+      ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          TextField(controller: _usernameController, decoration: const InputDecoration(labelText: 'Username'),),
-          const SizedBox(height: 16),
-          TextField(controller: _messageController, decoration: const InputDecoration(labelText: 'Message'),),
-          const SizedBox(height: 16),
           Row(
             children: [
-              Expanded(child: ElevatedButton(onPressed: _sendMessage, child: const Text('Send'))),
-              const SizedBox(width: 16),
-              ElevatedButton(onPressed: () => _showHTTPStatus(200), child: const Text('200')),
-              const SizedBox(width: 16),
-              ElevatedButton(onPressed: () => _showHTTPStatus(404), child: const Text('404')),
-              const SizedBox(width: 16),
-              ElevatedButton(onPressed: () => _showHTTPStatus(500), child: const Text('500')),
+              Expanded(
+                child: TextField(
+                  controller: _usernameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Username',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextField(
+                  controller: _messageController,
+                  decoration: const InputDecoration(
+                    labelText: 'Message',
+                    border: OutlineInputBorder(),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _sendMessage,
+                  child: const Text('Send Message'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: () => _showHTTPStatus(200),
+                child: const Text('200'),
+              ),
+              const SizedBox(width: 4),
+              ElevatedButton(
+                onPressed: () => _showHTTPStatus(404),
+                child: const Text('404'),
+              ),
+              const SizedBox(width: 4),
+              ElevatedButton(
+                onPressed: () => _showHTTPStatus(500),
+                child: const Text('500'),
+              ),
             ],
           ),
         ],
-      ),  
-    ); 
+      ),
+    );
   }
 
   Widget _buildErrorWidget() {
@@ -244,33 +406,42 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: Implement build method
-    // Return Scaffold with:
-    // - AppBar with title "REST API Chat" and refresh action
-    // - Body that shows loading, error, or message list based on state
-    // - BottomSheet with message input
-    // - FloatingActionButton for refresh
-    // Handle different states: loading, error, success
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          onPressed: _loadMessages, 
+          icon: const Icon(Icons.refresh), 
+          tooltip: 'Refresh'
+        ),
         title: const Text('REST API CHAT'),
-        actions: [
-          IconButton(onPressed: _loadMessages, icon: const Icon(Icons.refresh)),
+        
+      ),
+      body: Column(
+        children: [
+          // Chat messages area
+          
+          Expanded(
+            child: _isLoading 
+              ? _buildLoadingWidget() 
+              : _error != null 
+                ? _buildErrorWidget() 
+                : _messages.isEmpty
+                  ? const Center(child: Text('No messages yet. Send the first one!'))
+                  : ListView.builder(
+                      itemCount: _messages.length,
+                      itemBuilder: (context, index) => _buildMessageTile(_messages[index]),
+                    ),
+          ),
+          // Input area at bottom
+          _buildMessageInput(),
         ],
       ),
-      body: _isLoading 
-        ? _buildLoadingWidget() 
-        : _error != null 
-          ? _buildErrorWidget() 
-          : ListView.builder(
-              itemCount: _messages.length,
-              itemBuilder: (context, index) => _buildMessageTile(_messages[index]),
-            ),
-      bottomSheet: _buildMessageInput(),
       floatingActionButton: FloatingActionButton(
         onPressed: _loadMessages,
         child: const Icon(Icons.refresh),
       ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endTop,
+     
     );
   }
 }
