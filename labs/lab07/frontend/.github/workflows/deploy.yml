@@ -20,9 +20,14 @@ jobs:
         working-directory: labs/lab07/frontend
 
       - name: Build web
+
         run: #TODO: Add command
         working-directory: labs/lab07/frontend
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
-        # TODO: add other and setup repository 
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: labs/lab07/frontend/build/web
+          destination_dir: lab07-mamajonov-khayotbek
+
