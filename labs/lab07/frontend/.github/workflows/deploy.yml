@@ -1,10 +1,8 @@
 name: Deploy Flutter Web to GitHub Pages
 
 on:
-  push:
-    branches:
-      - lab07-mamajonov-khayotbek
-
+  # TODO: Add condition
+    
   workflow_dispatch:
 
 jobs:
@@ -15,18 +13,15 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.16.9'
+        run: #TODO: Add command
 
       - name: Install dependencies
-        run: flutter pub get
+        run: #TODO: Add command
         working-directory: labs/lab07/frontend
 
       - name: Build web
-        run: |
-          flutter create . --platforms web
-          flutter build web --base-href /sum25-go-flutter-course/lab07-mamajonov-khayotbek/
+
+        run: #TODO: Add command
         working-directory: labs/lab07/frontend
 
       - name: Deploy to GitHub Pages
@@ -35,3 +30,4 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: labs/lab07/frontend/build/web
           destination_dir: lab07-mamajonov-khayotbek
+
